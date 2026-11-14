@@ -15,6 +15,8 @@ import cv2
 import numpy as np
 import torch
 import zlib
+import open3d as o3d
+
 
 # add project directory to python path to enable relative imports
 import os
@@ -37,81 +39,88 @@ def show_pcl(pcl):
     ####### ID_S1_EX2 START #######     
     #######
     print("student task ID_S1_EX2")
+    #debug
+    print("Debug for pcl array")
+    print(pcl.dtype)
+    print(pcl.dtype)
+    print(pcl.shape)
+
 
     # step 1 : initialize open3d with key callback and create window
-    import open3d as o3d
-    vis = o3d.visualization.VisualizerWithKeyCallback()
-    vis.create_window(
-      window_name="Open3D Key Callback Window",
-      width=1280,
-      height=720,
-      left=50,
-      top=50,
-      visible=True,
-    )
 
     # step 2 : create instance of open3d point-cloud class
-    pcd = o3d.geometry.PointCloud()
-
-    # 2. Initialize Visualizer with Key Callback
-    self.vis = o3d.visualization.VisualizerWithKeyCallback()
-    self.vis.create_window(
-        window_name="Dynamic Point Cloud Player", width=1280, height=720
-    )
 
     # step 3 : set points in pcd instance by converting the point-cloud into 3d vectors (using open3d function Vector3dVector)
-    pcd.points = o3d.utility.Vector3dVector(pcl)
 
     # step 4 : for the first frame, add the pcd instance to visualization using add_geometry; for all other frames, use update_geometry instead
-    o3d.visualization.add_geometries([pcd])
-    o3d.visualization.update_geometries([pcd])
 
     # step 5 : visualize point cloud and keep window open until right-arrow is pressed (key-code 262)
 
     class PointCloudPlayer:
 
         def __init__(self, pcl):
-            self.frames_data = pcl
+            # self.frames_data = pcl[:, :3]
+            self.frames_data = o3d.utility.Vector3dVector(pcl[:, :3])
             self.frame_idx = 0
             self.is_first_frame = True
 
+            #debug for self.frames_data
+            #print("Debug for self.frames_data array")
+            #print(self.frames_data.dtype)
+            #print(self.frames_data.dtype)
+            #print(self.frames_data.shape)
+
             # 1. Create a persistent PointCloud instance
+            # AKA step 2 : create instance of open3d point-cloud class
             self.pcd = o3d.geometry.PointCloud()
 
             # 2. Initialize Visualizer with Key Callback
+            # AKA step 1a : initialize open3d (within instance) with key callback and create window
             self.vis = o3d.visualization.VisualizerWithKeyCallback()
             self.vis.create_window(
                 window_name="Dynamic Point Cloud Player", width=1280, height=720
             )
 
             # 3. Register key callback (Right Arrow = 262, or 'N')
+            # AKA step 1b : set instance key callback
             self.vis.register_key_callback(262, self.next_frame_callback)
             self.vis.register_key_callback(ord("N"), self.next_frame_callback)
 
-            # Load the very first frame
+            # Load the current frame
             self.load_current_frame()
 
         def load_current_frame(self):
             # Fetch new points (N x 3 numpy array)
             points = self.frames_data[self.frame_idx]
+            # points = np.ascontiguousarray(self.frames_data[self.frame_idx][:, :3], dtype=np.float64)
+            # points = np.transpose(self.frames_data[self.frame_idx])
+            #debug for points
+            print("Debug for points array")
+            print(points.dtype)
+            print(points.dtype)
+            print(points.shape)
 
             # Update the persistent pcd object in place
-            self.pcd.points = o3d.utility.Vector3dVector(points)
+            # AKA step 3 : set points in pcd instance by converting the point-cloud into 3d vectors (using open3d function Vector3dVector)
+            # self.pcd.points = o3d.utility.Vector3dVector(points)
 
+
+            # AKA step 4 : for the first frame, add the pcd instance to visualization using add_geometry; for all other frames, use update_geometry instead
             if self.is_first_frame:
-            # First frame: Add geometry to the visualizer
-            self.vis.add_geometry(self.pcd)
-            self.is_first_frame = False
+                # First frame: Add geometry to the visualizer
+                self.vis.add_geometry(self.pcd)
+                self.is_first_frame = False
             else:
-            # Subsequent frames: Update existing geometry without resetting camera
-            self.vis.update_geometry(self.pcd)
+                # Subsequent frames: Update existing geometry without resetting camera
+                self.vis.update_geometry(self.pcd)
 
+            # AKA step 5 : visualize point cloud and keep window open until right-arrow is pressed (key-code 262)
             self.vis.poll_events()
             self.vis.update_renderer()
 
         def next_frame_callback(self, vis):
             self.frame_idx = (self.frame_idx + 1) % len(self.frames_data)
-            print(f"Displaying frame {self.frame_idx}")
+            print("Displaying frame {}".format(self.frame_idx))
             self.load_current_frame()
             return False
 
@@ -119,6 +128,8 @@ def show_pcl(pcl):
             self.vis.run()
             self.vis.destroy_window()
 
+    player = PointCloudPlayer(pcl)
+    player.run
 
     #######
     ####### ID_S1_EX2 END #######     
