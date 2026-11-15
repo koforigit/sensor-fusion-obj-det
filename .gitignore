@@ -1,0 +1,4 @@
+# Ignore all files with a specific extension
+
+__pycache__/
+*.py[cod]
