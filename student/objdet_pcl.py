@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------
 # Project "Track 3D-Objects Over Time"
 # Copyright (C) 2020, Dr. Antje Muntzinger / Dr. Andreas Haja.
-#
+# Revised 11/14/2026: Kwame A. Ofori
 # Purpose of this file : Process the point-cloud and prepare it for object detection
 #
 # You should have received a copy of the Udacity license together with this program.
@@ -39,11 +39,6 @@ def show_pcl(pcl):
     ####### ID_S1_EX2 START #######     
     #######
     print("student task ID_S1_EX2")
-    #debug
-    print("Debug for pcl array")
-    print(pcl.dtype)
-    print(pcl.shape)
-
 
     # step 1 : initialize open3d with key callback and create window
 
@@ -60,11 +55,8 @@ def show_pcl(pcl):
         def __init__(self, pcl):
             # convert point cloud 4 column (xyz-intensity) into a 3 colum XYZ array
             self.pcl_xyz = pcl[:, :3]
-            #debug for pcl_xyz data
-            print("Debug for pcl_xyz array")
-            print(self.pcl_xyz.dtype)
-            print(self.pcl_xyz.shape)
-            #create Open3D vector object. This is a specialized C++ container
+
+            # create Open3D vector object. This is a specialized C++ container
             self.frames_data = o3d.utility.Vector3dVector(self.pcl_xyz)
             self.frame_idx = 0
             self.is_first_frame = True
@@ -89,29 +81,18 @@ def show_pcl(pcl):
             self.load_current_frame()
 
         def load_current_frame(self):
-            # Fetch new points (N x 3 numpy array)
-            # points = self.frames_data[self.frame_idx]
-            # points = self.frames_data
-            # points = np.ascontiguousarray(self.frames_data[self.frame_idx][:, :3], dtype=np.float64)
-            # points = np.transpose(self.frames_data[self.frame_idx])
-            #debug for points
-            # print("Debug for points array")
-            # print(points.dtype)
-            # print(points.shape)
-
             # Update the persistent pcd object in place
             # AKA step 3 : set points in pcd instance by converting the point-cloud into 3d vectors object (using open3d function Vector3dVector)
             self.pcd.points = o3d.utility.Vector3dVector(self.pcl_xyz)
-
 
             # AKA step 4 : for the first frame, add the pcd instance to visualization using add_geometry; for all other frames, use update_geometry instead
             if self.is_first_frame:
                 # First frame: Add geometry to the visualizer
                 self.vis.add_geometry(self.pcd)
-                # Tilt the camera into a 3D behind-the-vehicle perspective
+                # Tilt the camera into a DEFAULT 3D behind-the-vehicle perspective
                 ctr = self.vis.get_view_control()
                 ctr.rotate(0.0, -500.0)  # Pitch the camera down into a 3D chase perspective
-                ctr.rotate(200.0, 200.0)   # Yaw horizontally so +X points forward (adjust as needed)
+                ctr.rotate(200.0, 300.0)   # Yaw horizontally so +X points forward (adjust as needed)
                 ctr.scale(-30.0)         # Negative values zoom in; positive values zoom out
 
                 self.is_first_frame = False
@@ -124,8 +105,8 @@ def show_pcl(pcl):
             self.vis.update_renderer()
 
         def next_frame_callback(self, vis):
-            self.frame_idx = (self.frame_idx + 1) % len(self.frames_data)
-            print("Displaying frame {}".format(self.frame_idx))
+            # self.frame_idx = (self.frame_idx + 1) % len(self.frames_data)
+            # print("Displaying frame {}".format(self.frame_idx))
             # self.load_current_frame()
             # Close the window so the outer script advances to the next frame
             vis.close()
