@@ -42,7 +42,6 @@ def show_pcl(pcl):
     #debug
     print("Debug for pcl array")
     print(pcl.dtype)
-    print(pcl.dtype)
     print(pcl.shape)
 
 
@@ -59,16 +58,16 @@ def show_pcl(pcl):
     class PointCloudPlayer:
 
         def __init__(self, pcl):
-            # self.frames_data = pcl[:, :3]
-            self.frames_data = o3d.utility.Vector3dVector(pcl[:, :3])
+            # convert point cloud 4 column (xyz-intensity) into a 3 colum XYZ array
+            self.pcl_xyz = pcl[:, :3]
+            #debug for pcl_xyz data
+            print("Debug for pcl_xyz array")
+            print(self.pcl_xyz.dtype)
+            print(self.pcl_xyz.shape)
+            #create Open3D vector object. This is a specialized C++ container
+            self.frames_data = o3d.utility.Vector3dVector(self.pcl_xyz)
             self.frame_idx = 0
             self.is_first_frame = True
-
-            #debug for self.frames_data
-            #print("Debug for self.frames_data array")
-            #print(self.frames_data.dtype)
-            #print(self.frames_data.dtype)
-            #print(self.frames_data.shape)
 
             # 1. Create a persistent PointCloud instance
             # AKA step 2 : create instance of open3d point-cloud class
@@ -91,24 +90,30 @@ def show_pcl(pcl):
 
         def load_current_frame(self):
             # Fetch new points (N x 3 numpy array)
-            points = self.frames_data[self.frame_idx]
+            # points = self.frames_data[self.frame_idx]
+            # points = self.frames_data
             # points = np.ascontiguousarray(self.frames_data[self.frame_idx][:, :3], dtype=np.float64)
             # points = np.transpose(self.frames_data[self.frame_idx])
             #debug for points
-            print("Debug for points array")
-            print(points.dtype)
-            print(points.dtype)
-            print(points.shape)
+            # print("Debug for points array")
+            # print(points.dtype)
+            # print(points.shape)
 
             # Update the persistent pcd object in place
-            # AKA step 3 : set points in pcd instance by converting the point-cloud into 3d vectors (using open3d function Vector3dVector)
-            # self.pcd.points = o3d.utility.Vector3dVector(points)
+            # AKA step 3 : set points in pcd instance by converting the point-cloud into 3d vectors object (using open3d function Vector3dVector)
+            self.pcd.points = o3d.utility.Vector3dVector(self.pcl_xyz)
 
 
             # AKA step 4 : for the first frame, add the pcd instance to visualization using add_geometry; for all other frames, use update_geometry instead
             if self.is_first_frame:
                 # First frame: Add geometry to the visualizer
                 self.vis.add_geometry(self.pcd)
+                # Tilt the camera into a 3D behind-the-vehicle perspective
+                ctr = self.vis.get_view_control()
+                ctr.rotate(0.0, -500.0)  # Pitch the camera down into a 3D chase perspective
+                ctr.rotate(200.0, 200.0)   # Yaw horizontally so +X points forward (adjust as needed)
+                ctr.scale(-30.0)         # Negative values zoom in; positive values zoom out
+
                 self.is_first_frame = False
             else:
                 # Subsequent frames: Update existing geometry without resetting camera
@@ -121,15 +126,18 @@ def show_pcl(pcl):
         def next_frame_callback(self, vis):
             self.frame_idx = (self.frame_idx + 1) % len(self.frames_data)
             print("Displaying frame {}".format(self.frame_idx))
-            self.load_current_frame()
+            # self.load_current_frame()
+            # Close the window so the outer script advances to the next frame
+            vis.close()
             return False
 
         def run(self):
+            # Block and keep window open until Right Arrow triggers vis.close()
             self.vis.run()
             self.vis.destroy_window()
 
     player = PointCloudPlayer(pcl)
-    player.run
+    player.run()
 
     #######
     ####### ID_S1_EX2 END #######     
