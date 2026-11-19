@@ -207,8 +207,8 @@ def bev_from_pcl(lidar_pcl, configs):
     print("student task ID_S2_EX2")
 
     ## step 1 : create a numpy array filled with zeros which has the same dimensions as the BEV map    
-    zero_bev = np.zeros_like(lidar_pcl_cpy)
-    # zero_bev = np.zeros((configs.bev_height + 1, configs.bev_width + 1))
+    # zero_bev = np.zeros_like(lidar_pcl_cpy)
+    zero_bev = np.zeros((configs.bev_height + 1, configs.bev_width + 1)) # pixel resolution of bev image height x width
 
     # step 2 : re-arrange elements in lidar_pcl_cpy by sorting first by x, then y, then -z (use numpy.lexsort) 
     idx_height = np.lexsort((-lidar_pcl_cpy[:, 2], lidar_pcl_cpy[:, 1], lidar_pcl_cpy[:, 0]))
@@ -219,16 +219,11 @@ def bev_from_pcl(lidar_pcl, configs):
     # extract all points with identical x and y such that only the top-most z-coordinate is kept (use numpy.unique)
     _, idx_height_unique, counts = np.unique(lidar_pcl_hei[:, 0:2], axis=0, return_index=True, return_counts=True)
     lidar_pcl_hei = lidar_pcl_hei[idx_height_unique]
-    
-    # assign the height value of each unique entry in lidar_top_pcl to the height map and 
-    # make sure that each entry is normalized on the difference between the upper and lower height defined in the config file
-    height_map = np.zeros((configs.bev_height + 1, configs.bev_width + 1))
-    height_map[np.int_(lidar_pcl_hei[:, 0]), np.int_(lidar_pcl_hei[:, 1])] = lidar_pcl_hei[:, 2] / float(np.abs(configs.lim_z[1] - configs.lim_z[0]))
-    
+      
     ## step 4 : assign the intensity value of each unique entry in lidar_top_pcl to the intensity map 
     ##          make sure that the intensity is scaled in such a way that objects of interest (e.g. vehicles) are clearly visible    
     ##          also, make sure that the influence of outliers is mitigated by normalizing intensity on the difference between the max. and min. value within the point cloud
-    # create/print histogram array showin distribution and outlier intensities (extremely large or extremely small)
+    # create/print histogram array showing distribution and outlier intensities (extremely large or extremely small)
     b = np.array([0, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 1e+1, 1e+3, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7])
     hist,bins = np.histogram(lidar_pcl[:,3], bins=b)
     print(hist)
@@ -243,7 +238,7 @@ def bev_from_pcl(lidar_pcl, configs):
     lidar_pcl_int = lidar_pcl_cpy[indices]
 
     # create the intensity map
-    intensity_map = np.zeros((configs.bev_height + 1, configs.bev_width + 1))
+    intensity_map = zero_bev
 
     # 1. Calculate the 97th percentile threshold
     p97 = np.percentile(lidar_pcl_int[:, 3], 97)
@@ -254,11 +249,8 @@ def bev_from_pcl(lidar_pcl, configs):
     # 3. Normalize using the clipped values and assign to the map
     min_val = np.amin(clipped_intensity)
     max_val = np.amax(clipped_intensity)
-
     intensity_map[np.int_(lidar_pcl_int[:, 0]), np.int_(lidar_pcl_int[:, 1])] = ((clipped_intensity - min_val) / (max_val - min_val))
-    # intensity_map[np.int_(lidar_pcl_int[:, 0]), np.int_(lidar_pcl_int[:, 1])] = lidar_pcl_int[:, 3]) / (np.amax(lidar_pcl_int[:, 3])-np.amin(lidar_pcl_int[:, 3]))
-    # intensity_map[np.int_(lidar_pcl_int[:, 0]), np.int_(lidar_pcl_int[:, 1])] = ((lidar_pcl_int[:, 3]) - np.amin(lidar_pcl_int[:, 3])) / (np.amax(lidar_pcl_int[:, 3])-np.amin(lidar_pcl_int[:, 3]))
-
+ 
     ## step 5 : temporarily visualize the intensity map using OpenCV to make sure that vehicles separate well from the background
     # visualize intensity map
     img_intensity = intensity_map * 256
