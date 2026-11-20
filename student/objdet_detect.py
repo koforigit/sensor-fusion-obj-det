@@ -26,9 +26,10 @@ sys.path.append(os.path.normpath(os.path.join(SCRIPT_DIR, PACKAGE_PARENT)))
 from tools.objdet_models.resnet.models import fpn_resnet
 from tools.objdet_models.resnet.utils.evaluation_utils import decode, post_processing 
 
+from tools.objdet_models.resnet.utils.torch_utils import _sigmoid  # KO Added
+
 from tools.objdet_models.darknet.models.darknet2pytorch import Darknet as darknet
 from tools.objdet_models.darknet.utils.evaluation_utils import post_processing_v2
-
 
 # load model-related parameters into an edict
 def load_configs_model(model_name='darknet', configs=None):
@@ -61,6 +62,49 @@ def load_configs_model(model_name='darknet', configs=None):
         ####### ID_S3_EX1-3 START #######     
         #######
         print("student task ID_S3_EX1-3")
+
+        # BEV Input and Output Heatmap Dimensions
+        configs.input_size = (608, 608)
+        configs.hm_size = (152, 152)
+        configs.down_ratio = 4
+
+        # Inference / Decoding thresholds
+        configs.max_objects = 50
+        configs.conf_thresh = 0.5 # KO added ******(review)***********
+        configs.peak_thresh = 0.2 # KO added ******(review)***********
+        configs.use_giou_loss = False # KO added ******(review)***********
+
+        # Hardware & dataset settings # KO added ******(review)***********
+        configs.no_cuda = False
+        configs.gpu_idx = 0
+        configs.pin_memory = True
+        configs.distributed = False
+        configs.num_samples = None
+        configs.num_workers = 1
+        configs.batch_size = 1
+
+        # Architecture (and Pretrained) Weights
+        configs.model_path = os.path.join(parent_path, 'tools', 'objdet_models', 'resnet')
+        configs.pretrained_filename = os.path.join(configs.model_path, 'pretrained', 'fpn_resnet_18_epoch_300.pth')
+        configs.arch = 'fpn_resnet'
+        configs.imagenet_pretrained = False
+        configs.head_conv = 64
+
+        # Output heads configuration
+        configs.num_classes = 3
+        configs.num_center_offset = 2
+        configs.num_z = 1
+        configs.num_dim = 3
+        configs.num_direction = 2  # sin, cos
+
+        configs.heads = {
+            'hm_cen': configs.num_classes,
+            'cen_offset': configs.num_center_offset,
+            'direction': configs.num_direction,
+            'z_coor': configs.num_z,
+            'dim': configs.num_dim
+        }
+        configs.num_input_features = 4 # test.py added ******(review)***********
 
         #######
         ####### ID_S3_EX1-3 END #######     
@@ -108,6 +152,10 @@ def create_model(configs):
     assert os.path.isfile(configs.pretrained_filename), "No file at {}".format(configs.pretrained_filename)
 
     # create model depending on architecture name
+        # Hint: SFA3D (FPN-ResNet) runs faster and avoids Non-Max Suppression (NMS) because 
+        # it treats object detection as a single-point keypoint estimation problem 
+        # (CenterNet-style) rather than predicting thousands of overlapping anchor boxes 
+        # across a dense grid.
     if (configs.arch == 'darknet') and (configs.cfgfile is not None):
         print('using darknet')
         model = darknet(cfgfile=configs.cfgfile, use_giou_loss=configs.use_giou_loss)    
@@ -118,7 +166,15 @@ def create_model(configs):
         ####### ID_S3_EX1-4 START #######     
         #######
         print("student task ID_S3_EX1-4")
-
+        # num_layers = 18
+        arch_parts = configs.arch.split('_')
+        num_layers = int(arch_parts[-1]) if arch_parts[-1].isdigit() else 18
+        model = fpn_resnet.get_pose_net(
+            num_layers=num_layers,
+            heads=configs.heads,
+            head_conv=configs.head_conv,
+            imagenet_pretrained=configs.imagenet_pretrained
+        )
         #######
         ####### ID_S3_EX1-4 END #######     
     
@@ -167,7 +223,31 @@ def detect_objects(input_bev_maps, model, configs):
             ####### ID_S3_EX1-5 START #######     
             #######
             print("student task ID_S3_EX1-5")
+            with torch.no_grad():
+                # Perform inference
+                outputs = model(input_bev_maps)
 
+                # Decode model output into bounding box candidates
+                outputs['hm_cen'] = _sigmoid(outputs['hm_cen'])
+                outputs['cen_offset'] = _sigmoid(outputs['cen_offset'])
+                
+                # detections size (batch_size, K, 10) -> [scores, xs, ys, z, dim, direction, clses]
+                detections = decode(
+                    outputs['hm_cen'],
+                    outputs['cen_offset'],
+                    outputs['direction'],
+                    outputs['z_coor'],
+                    outputs['dim'],
+                    K=configs.max_objects
+                )
+                detections = detections.cpu().numpy().astype(np.float32)
+
+                # Perform post-processing to filter out low-confidence detections
+                detections = post_processing(
+                    detections,
+                    configs
+                )
+                detections = detections[0]
             #######
             ####### ID_S3_EX1-5 END #######     
 
