@@ -247,6 +247,11 @@ def detect_objects(input_bev_maps, model, configs):
                     detections,
                     configs
                 )
+                # detections[0] indexing: Your post_processing() returns ret, 
+                # which is a list of dictionaries 
+                # (one dictionary per item in the batch). 
+                # Since batch_size = 1, you must grab detections[0] 
+                # before looping over for j in range(configs.num_classes):.
                 # detections = detections[0]
             #######
             ####### ID_S3_EX1-5 END #######     
