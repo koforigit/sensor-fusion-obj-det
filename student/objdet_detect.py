@@ -247,7 +247,7 @@ def detect_objects(input_bev_maps, model, configs):
                     detections,
                     configs
                 )
-                detections = detections[0]
+                # detections = detections[0]
             #######
             ####### ID_S3_EX1-5 END #######     
 
