@@ -49,25 +49,43 @@ def measure_detection_performance(detections, labels, labels_valid, min_iou=0.5)
             print("student task ID_S4_EX1 ")
 
             ## step 1 : extract the four corners of the current label bounding-box
-            
+            box_label = [label.box.center_x, label.box.center_y, label.box.width, label.box.length, label.box.heading]
+            corners_label = tools.compute_box_corners(*box_label)
+            poly_label = Polygon(corners_label)
+
             ## step 2 : loop over all detected objects
+            for det in detections:
+                # Unpack detection: [class_id, x, y, z, h, w, l, yaw]
+                _, x, y, z, h, w, l, yaw = det
 
                 ## step 3 : extract the four corners of the current detection
-                
-                ## step 4 : computer the center distance between label and detection bounding-box in x, y, and z
-                
+                corners_det = tools.compute_box_corners(x, y, w, l, yaw)
+                poly_det = Polygon(corners_det)
+
+                ## step 4 : compute the center distance between label and detection bounding-box in x, y, and z
+                dist_x = np.abs(label.box.center_x - x)
+                dist_y = np.abs(label.box.center_y - y)
+                dist_z = np.abs(label.box.center_z - z)
+
                 ## step 5 : compute the intersection over union (IOU) between label and detection bounding-box
-                
-                ## step 6 : if IOU exceeds min_iou threshold, store [iou,dist_x, dist_y, dist_z] in matches_lab_det and increase the TP count
-                
+                inter_area = poly_label.intersection(poly_det).area
+                union_area = poly_label.area + poly_det.area - inter_area
+                iou = inter_area / union_area if union_area > 0 else 0.0
+
+                ## step 6 : if IOU exceeds min_iou threshold, store [iou, dist_x, dist_y, dist_z] in matches_lab_det and increase the TP count
+                if iou > min_iou:
+                    matches_lab_det.append([iou, dist_x, dist_y, dist_z])
+                    # true_positives += 1
+               
             #######
             ####### ID_S4_EX1 END #######     
             
         # find best match and compute metrics
         if matches_lab_det:
-            best_match = max(matches_lab_det,key=itemgetter(1)) # retrieve entry with max iou in case of multiple candidates   
+            best_match = max(matches_lab_det,key=itemgetter(0)) # retrieve entry with max iou in case of multiple candidates   
             ious.append(best_match[0])
             center_devs.append(best_match[1:])
+            true_positives += 1
 
 
     ####### ID_S4_EX2 START #######     

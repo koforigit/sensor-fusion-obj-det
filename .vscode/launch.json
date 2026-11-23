@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/loop_over_dataset.py",
-            "args": ["--arch", "fpn_resnet"],
+            "args": ["--arch", "darknet"],
             "console": "integratedTerminal"
           }
           

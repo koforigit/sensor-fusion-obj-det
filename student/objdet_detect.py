@@ -58,6 +58,13 @@ def load_configs_model(model_name='darknet', configs=None):
         configs.pin_memory = True
         configs.use_giou_loss = False
 
+        # Output heads configuration
+        configs.num_classes = 3
+        configs.num_center_offset = 2
+        configs.num_z = 1
+        configs.num_dim = 3
+        configs.num_direction = 2  # sin, cos
+
     elif model_name == 'fpn_resnet':
         ####### ID_S3_EX1-3 START #######     
         #######
@@ -266,12 +273,15 @@ def detect_objects(input_bev_maps, model, configs):
     # detections[0] contains the list of detections per class for the first (and only) batch item
     for j in range(configs.num_classes):
         ## step 1 : check whether there are any detections
-        if len(detections[0][j]) > 0:
+        if len(detections) > 0:
             ## step 2 : loop over all detections
-            for det in detections[0][j]:
+            for det in detections:
                 # det format: [score, x, y, z, h, w, l, yaw] (in BEV heatmap/pixel scale)
                 _score, _x, _y, _z, _h, _w, _l, _yaw = det
                 ## step 3 : perform the conversion using the limits for x, y and z set in the configs structure
+                
+                score = _score
+
                 # Convert BEV pixel coordinates to metric LiDAR/vehicle coordinates
 
                 # Invert yaw to match the vehicle/LiDAR coordinate axes
@@ -285,7 +295,7 @@ def detect_objects(input_bev_maps, model, configs):
                 l = _l / configs.bev_height * (configs.lim_x[1] - configs.lim_x[0])
 
                 ## step 4 : append the current object to the 'objects' array
-                objects.append([j, x, y, z, _h, w, l, yaw])
+                objects.append([score, x, y, z, _h, w, l, yaw])
 
     #######
     ####### ID_S3_EX2 END #######   
