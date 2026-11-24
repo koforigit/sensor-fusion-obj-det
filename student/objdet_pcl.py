@@ -195,7 +195,7 @@ def bev_from_pcl(lidar_pcl, configs):
     # lidar_pcl_cpy[:, 2] = lidar_pcl_cpy[:, 2] - configs.lim_z[0] 
 
     # step 4 : visualize point-cloud using the function show_pcl from a previous task
-    # DEBUG - Commented show_pcl execution out for Debigging Speed - KO
+    # DEBUG - Commented out BELOW show_pcl execution out for Debugging Speed - KO
     # show_pcl(lidar_pcl_cpy)
 
     #######
@@ -260,7 +260,7 @@ def bev_from_pcl(lidar_pcl, configs):
     img_intensity = img_intensity.astype(np.uint8)
     while (1):
         cv2.imshow('img_intensity', img_intensity)
-        # DEBUG - Commented waitKey out for debugging speed - KO
+        # DEBUG - Commented out  waitKey BELOW for debugging speed - KO
         # if cv2.waitKey(10) & 0xFF == 27: # wait 10msec and check if ESC was pressed
         break
     cv2.destroyAllWindows()
@@ -296,7 +296,7 @@ def bev_from_pcl(lidar_pcl, configs):
     img_height = img_height.astype(np.uint8)
     while (1):
         cv2.imshow('img_height height layer from BEV map', img_height)
-        # DEBUG - Commented waitKey out for debugging speed - KO
+        # DEBUG - Commented waitKey out BELOW for debugging speed - KO
         # if cv2.waitKey(10) & 0xFF == 27: # wait 10msec and check if ESC was pressed 
         break
     cv2.destroyAllWindows()
