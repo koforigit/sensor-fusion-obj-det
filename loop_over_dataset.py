@@ -57,7 +57,7 @@ show_only_frames = [50, 150] # show only frames in interval for debugging
 ## Prepare Waymo Open Dataset file for loading
 
 data_fullpath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'dataset', data_filename) # adjustable path in case this script is called from another working directory
-model = "darknet"
+model = "darknet" # Set model options to "darkent", "fpn-resnet", or something else
 sequence = "1"
 # results_fullpath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'results/' + model + '/results_sequence_' + sequence + '_' + model)
 
@@ -84,7 +84,7 @@ model_det = det.create_model(configs_det)
 
 configs_det.use_labels_as_objects = False # True = use groundtruth labels as objects, False = use model-based detection
 
-configs_det.min_iou = 0.6 # Set the minumum Intersection Over Union threshold (e.g. 0.5 = 50%) Added KO
+configs_det.min_iou = 0.5 # Set the minumum Intersection Over Union threshold (e.g. 0.5 = 50%) Added KO
 
 ## Uncomment this setting to restrict the y-range in the final project
 # configs_det.lim_y = [-25, 25] 

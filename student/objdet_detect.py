@@ -59,7 +59,7 @@ def load_configs_model(model_name='darknet', configs=None):
         configs.use_giou_loss = False
 
         # Output heads configuration
-        configs.num_classes = 3
+        configs.num_classes = 1
         configs.num_center_offset = 2
         configs.num_z = 1
         configs.num_dim = 3
@@ -98,7 +98,7 @@ def load_configs_model(model_name='darknet', configs=None):
         configs.head_conv = 64
 
         # Output heads configuration
-        configs.num_classes = 3
+        configs.num_classes = 1 # should be 3 if running independently -KO
         configs.num_center_offset = 2
         configs.num_z = 1
         configs.num_dim = 3
