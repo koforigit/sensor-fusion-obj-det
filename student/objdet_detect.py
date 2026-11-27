@@ -98,7 +98,7 @@ def load_configs_model(model_name='darknet', configs=None):
         configs.head_conv = 64
 
         # Output heads configuration
-        configs.num_classes = 1 # should be 3 if running independently -KO
+        configs.num_classes = 3 # should be 3 if running fpn_resnet -KO
         configs.num_center_offset = 2
         configs.num_z = 1
         configs.num_dim = 3
@@ -254,12 +254,6 @@ def detect_objects(input_bev_maps, model, configs):
                     detections,
                     configs
                 )
-                # detections[0] indexing: Your post_processing() returns ret, 
-                # which is a list of dictionaries 
-                # (one dictionary per item in the batch). 
-                # Since batch_size = 1, you must grab detections[0] 
-                # before looping over for j in range(configs.num_classes):.
-                # detections = detections[0]
             #######
             ####### ID_S3_EX1-5 END #######     
 
@@ -270,32 +264,27 @@ def detect_objects(input_bev_maps, model, configs):
     # Extract 3d bounding boxes from model response
     print("student task ID_S3_EX2")
     objects = []
-    # detections[0] contains the list of detections per class for the first (and only) batch item
-    for j in range(configs.num_classes):
-        ## step 1 : check whether there are any detections
-        if len(detections) > 0:
-            ## step 2 : loop over all detections
-            for det in detections:
-                # det format: [score, x, y, z, h, w, l, yaw] (in BEV heatmap/pixel scale)
-                _score, _x, _y, _z, _h, _w, _l, _yaw = det
-                ## step 3 : perform the conversion using the limits for x, y and z set in the configs structure
-                
-                score = _score
-
-                # Convert BEV pixel coordinates to metric LiDAR/vehicle coordinates
-
-                # Invert yaw to match the vehicle/LiDAR coordinate axes
-                yaw = -_yaw
-
-                # Convert BEV pixel coordinates to metric vehicle coordinates
+    # Darknet and Resnet handle score and class_id differently
+    if 'fpn_resnet' in configs.arch:
+        per_class = detections[0]              # dict {class_id: array[N, 8]}
+        for class_id, dets in per_class.items():
+            for _score, _x, _y, _z, _h, _w, _l, _yaw in dets:
                 x = _y / configs.bev_height * (configs.lim_x[1] - configs.lim_x[0]) + configs.lim_x[0]
                 y = _x / configs.bev_width * (configs.lim_y[1] - configs.lim_y[0]) + configs.lim_y[0]
                 z = _z + configs.lim_z[0]
                 w = _w / configs.bev_width * (configs.lim_y[1] - configs.lim_y[0])
                 l = _l / configs.bev_height * (configs.lim_x[1] - configs.lim_x[0])
-
-                ## step 4 : append the current object to the 'objects' array
-                objects.append([score, x, y, z, _h, w, l, yaw])
+                objects.append([class_id, x, y, z, _h, w, l, -_yaw])
+    else:  # darknet: [class_id, x, y, z, h, w, l, yaw] in BEV pixels
+        for det in detections:
+            _id, _x, _y, _z, _h, _w, _l, _yaw = det
+            # same conversion as above
+            x = _y / configs.bev_height * (configs.lim_x[1] - configs.lim_x[0]) + configs.lim_x[0]
+            y = _x / configs.bev_width * (configs.lim_y[1] - configs.lim_y[0]) + configs.lim_y[0]
+            z = _z + configs.lim_z[0]
+            w = _w / configs.bev_width * (configs.lim_y[1] - configs.lim_y[0])
+            l = _l / configs.bev_height * (configs.lim_x[1] - configs.lim_x[0])
+            objects.append([_id, x, y, z, _h, w, l, -_yaw])
 
     #######
     ####### ID_S3_EX2 END #######   
