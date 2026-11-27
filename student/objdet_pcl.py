@@ -144,14 +144,26 @@ def show_range_image(frame, lidar_name):
     ri[ri<0]=0.0
     
     # step 4 : map the range channel onto an 8-bit scale and make sure that the full range of values is appropriately considered
+    # Inner dimensions are:
+    # channel 0: range
+    # channel 1: intensity
+    # channel 2: elongation
+    # channel 3: is in any no label zone
     ri_range = ri[:,:,0]
     ri_range = ri_range * 255 / (np.amax(ri_range) - np.amin(ri_range))
     img_range = ri_range.astype(np.uint8)
 
     # step 5 : map the intensity channel onto an 8-bit scale and normalize with the difference between the 1- and 99-percentile to mitigate the influence of outliers
     ri_intensity = ri[:,:,1]
-    ri_intensity = np.amax(ri_intensity)/2  *ri_intensity*  255 / (np.amax(ri_intensity) - np.amin(ri_intensity)) 
-    img_intensity = ri_intensity.astype(np.uint8)
+    p1, p99 = np.percentile(ri_intensity, 1), np.percentile(ri_intensity, 99)
+    img_intensity = (np.clip((ri_intensity - p1) / max(p99 - p1, 1e-6), 0, 1) * 255).astype(np.uint8)
+
+    # Crop range image to +/- 90 degrees left & right of the forward facing x-axis
+    center_of_width, quarter_of_width = img_range.shape[1] // 2, img_range.shape[1] // 4
+    # Keep all rows (:) and slices the columns from c - q (25% mark) to c + q (75% mark).
+    img_range = img_range[:, center_of_width - quarter_of_width : center_of_width + quarter_of_width]
+    # Apply the exact same horizontal crop to img_intensity so both images remain pixel-aligned before stacking or visualizing them together.
+    img_intensity = img_intensity[:, center_of_width - quarter_of_width : center_of_width + quarter_of_width]
 
     # step 6 : stack the range and intensity image vertically using np.vstack and convert the result to an unsigned 8-bit integer
     # Stack the images vertically and cast to uint8
@@ -173,7 +185,7 @@ def bev_from_pcl(lidar_pcl, configs):
                     (lidar_pcl[:, 2] >= configs.lim_z[0]) & (lidar_pcl[:, 2] <= configs.lim_z[1]))
     lidar_pcl = lidar_pcl[mask]
     
-    # shift level of ground plane to avoid flipping from 0 to 255 for neighboring pixels
+    # (AKA Step 4) shift level of ground plane to avoid flipping from 0 to 255 for neighboring pixels
     lidar_pcl[:, 2] = lidar_pcl[:, 2] - configs.lim_z[0]  
 
     # convert sensor coordinates to bev-map coordinates (center is bottom-middle)
@@ -238,7 +250,7 @@ def bev_from_pcl(lidar_pcl, configs):
     _, indices = np.unique(lidar_pcl_cpy[:, 0:2], axis=0, return_index=True)
     lidar_pcl_int = lidar_pcl_cpy[indices]
 
-    lidar_pcl_top = lidar_pcl_int
+    lidar_pcl_top = lidar_pcl_hei  #top-most z-value per cell
 
     # create the intensity map
     intensity_map = zero_bev
@@ -260,7 +272,7 @@ def bev_from_pcl(lidar_pcl, configs):
     img_intensity = img_intensity.astype(np.uint8)
     while (1):
         cv2.imshow('img_intensity', img_intensity)
-        # DEBUG - Commented out  waitKey BELOW for debugging speed - KO
+        # DEBUG - Commented out waitKey BELOW for debugging speed & indented "break" - KO
         # if cv2.waitKey(10) & 0xFF == 27: # wait 10msec and check if ESC was pressed
         break
     cv2.destroyAllWindows()
@@ -296,12 +308,11 @@ def bev_from_pcl(lidar_pcl, configs):
     img_height = img_height.astype(np.uint8)
     while (1):
         cv2.imshow('img_height height layer from BEV map', img_height)
-        # DEBUG - Commented waitKey out BELOW for debugging speed - KO
+        # DEBUG - Commented waitKey out & indented "break" BELOW for debugging speed - KO
         # if cv2.waitKey(10) & 0xFF == 27: # wait 10msec and check if ESC was pressed 
         break
     cv2.destroyAllWindows()
 
-    #######
     ####### ID_S2_EX3 END #######       
 
     # TODO remove after implementing all of the above steps - DONE 11/19/26 -KO

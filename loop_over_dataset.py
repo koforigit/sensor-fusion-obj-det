@@ -57,7 +57,7 @@ show_only_frames = [50, 150] # show only frames in interval for debugging
 ## Prepare Waymo Open Dataset file for loading
 
 data_fullpath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'dataset', data_filename) # adjustable path in case this script is called from another working directory
-model = "darknet" # Set model options to "darkent", "fpn-resnet", or something else
+model = "darknet" # Set model options to "darknet", "fpn-resnet", or something else
 sequence = "1"
 # results_fullpath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'results/' + model + '/results_sequence_' + sequence + '_' + model)
 
@@ -98,7 +98,7 @@ camera = None # init camera sensor object
 np.random.seed(10) # make random values predictable
 
 ## Selective execution and visualization
-exec_data = ['pcl_from_rangeimage'] # ADDED -> controls the execution of steps related to sensor data
+exec_data = ['pcl_from_rangeimage'] # ADDED -> options are 'pcl_from_rangeimage', 'load_image'-> controls the execution of steps related to sensor data
 exec_detection = ['bev_from_pcl', 'detect_objects', 'validate_object_labels', 'measure_detection_performance'] # options are 'bev_from_pcl', 'detect_objects', 'validate_object_labels', 'measure_detection_performance'; options not in the list will be loaded from file
 exec_tracking = [] # options are 'perform_tracking'
 exec_visualization = ['show_detection_performance'] # options are 'show_range_image', 'show_bev', 'show_pcl', 'show_labels_in_image', 'show_objects_and_labels_in_bev', 'show_objects_in_bev_labels_in_camera', 'show_tracks', 'show_detection_performance', 'make_tracking_movie'
