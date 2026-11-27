@@ -250,7 +250,7 @@ def bev_from_pcl(lidar_pcl, configs):
     _, indices = np.unique(lidar_pcl_cpy[:, 0:2], axis=0, return_index=True)
     lidar_pcl_int = lidar_pcl_cpy[indices]
 
-    lidar_pcl_top = lidar_pcl_int
+    lidar_pcl_top = lidar_pcl_hei  #top-most z-value per cell
 
     # create the intensity map
     intensity_map = zero_bev
@@ -273,8 +273,8 @@ def bev_from_pcl(lidar_pcl, configs):
     while (1):
         cv2.imshow('img_intensity', img_intensity)
         # DEBUG - Commented out  waitKey BELOW for debugging speed - KO
-        # if cv2.waitKey(10) & 0xFF == 27: # wait 10msec and check if ESC was pressed
-        break
+        if cv2.waitKey(10) & 0xFF == 27: # wait 10msec and check if ESC was pressed
+            break
     cv2.destroyAllWindows()
 
     #######
@@ -313,7 +313,6 @@ def bev_from_pcl(lidar_pcl, configs):
         break
     cv2.destroyAllWindows()
 
-    #######
     ####### ID_S2_EX3 END #######       
 
     # TODO remove after implementing all of the above steps - DONE 11/19/26 -KO
